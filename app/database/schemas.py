@@ -70,7 +70,6 @@ class OrderResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
     skip_reason: Optional[str] = Field(default=None, max_length=500)
@@ -88,7 +87,30 @@ class PlayLogResponse(BaseModel):
     class Config:
         from_attributes = True
 
-#добавить схемы очереди
+class QueueItem(BaseModel):
+    order_id: int
+    song_title: str 
+    song_artist: Optional[str] = None
+    song_provider: Optional[str] = None
+    song_duration: Optional[int] = None
+    position: int
+
+#для интерфейса персонала
+class CurrentTrack(BaseModel):
+    order_id: int
+    song_title: str
+    song_artist: Optional[str] = None
+    song_provider: Optional[str] = None
+    song_duration: Optional[int] = None
+    started_at: datetime
+    remaining_seconds: Optional[int] = None
+
+class QueueResponse(BaseModel):
+    current: Optional[CurrentTrack] = None
+    queue: List[QueueItem] = []
+    total_in_queue: int
+    max_queue_size: int 
+
+
 #добавить схемы платежной системы
-#добавить схему текущего трека
 #добавить схему поиска
