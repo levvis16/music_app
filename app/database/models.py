@@ -41,7 +41,8 @@ class Order(Base):
     payment_id = Column(String(255))
 
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING, index=True)
-
+    played_at = Column(DateTime)
+    
     venue = relationship("Venue", back_populates="orders")
 
 class PlayLog(Base):
