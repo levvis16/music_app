@@ -1,13 +1,14 @@
 # app/services.py
 import json
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from redis.asyncio import Redis
 
 from app.database.models import Order, OrderStatus
 from app.redis_client import get_redis
+from app.websocket.websocket import manager
 
 
 class QueueService:
@@ -132,6 +133,7 @@ class OrderService:
     
     async def get_order(self, order_id: int) -> Optional[Order]:
         return await self.db.get(Order, order_id)
+
     
     async def get_orders_by_venue(self, venue_id: int, status: Optional[OrderStatus] = None):
         query = select(Order).where(Order.venue_id == venue_id)
@@ -140,3 +142,29 @@ class OrderService:
         query = query.order_by(Order.created_at.desc())
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def get_orders_by_user(self, user_fingerprint: str, limit: int = 10) -> List[Order]:
+        query = (
+            select(Order)
+            .where(Order.user_fingerprint == user_fingerprint)
+            .order_by(Order.id.desc())
+            .limit(limit)
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+
+async def broadcast_queue_update(venue_id: int):
+    queue_service = QueueService(venue_id)
+    current = await queue_service.get_current()
+    queue = await queue_service.get_all()
+
+    await manager.broadcast(
+        str(venue_id),
+        "queue_update",
+        {
+            "current": current,
+            "queue": queue,
+            "total": len(queue)
+        }
+    )

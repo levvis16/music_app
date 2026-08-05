@@ -51,9 +51,14 @@ class OrderBase(BaseModel):
     song_provider: SongProvider
     song_duration: Optional[int] = Field(default=None, ge=0)
 
-
-class OrderCreate(OrderBase):
-    pass
+class OrderCreate(BaseModel):
+    venue_id: int
+    song_title: str = Field(max_length=500)
+    song_artist: Optional[str] = Field(default=None, max_length=70)
+    song_provider: SongProvider
+    song_external_id: str
+    song_duration: Optional[int] = Field(default=None, ge=0)
+    price: int = Field(ge=0)
 
 class OrderResponse(BaseModel):
     id: int
