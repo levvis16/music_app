@@ -9,7 +9,7 @@ from app.database.schemas import (
     QueueResponse, CurrentTrack, QueueItem
 )
 
-router = APIRouter(prefix="admin", tags=['admin'])
+router = APIRouter(prefix="/admin", tags=['admin'])
 
 @router.get("/queue", response_model=QueueResponse)
 async def get_queue(venue_id: int):

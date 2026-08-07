@@ -4,9 +4,10 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 from app.api.v1.routers.router_queue import router as queue_router
 from app.api.v1.routers.router_track import router as track_router
-from app.api.v1.routers.router_black_list import router as black_list_router
-from app.api.v1.routers.router_white_list import router as white_list_router
-from app.api.v1.routers.router_statistics import router as statistics_router
+from app.api.v1.routers.router_venue import router as venue_router
+#from app.api.v1.routers.router_black_list import router as black_list_router
+#from app.api.v1.routers.router_white_list import router as white_list_router
+#from app.api.v1.routers.router_statistics import router as statistics_router
 from app.websocket.websocket import manager
 
 app = FastAPI(
@@ -23,6 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(venue_router)
 app.include_router(queue_router)
 app.include_router(track_router)
 #app.include_router(black_list_router)

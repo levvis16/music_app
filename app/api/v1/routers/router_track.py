@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.database import get_db
-from app.database.schemas import SongSearchResult, SongProvider, OrderResponse, OrderStatus
+from app.database.schemas import SongProvider, OrderResponse, OrderStatus
 from app.services import QueueService, OrderService, broadcast_queue_update
 
 router = APIRouter(prefix="/api/v1/track", tags=["track"])
