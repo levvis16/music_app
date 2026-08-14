@@ -1,58 +1,68 @@
-# app/services.py
 import json
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from redis.asyncio import Redis
+from app.websocket.websocket import manager
 
 from app.database.models import Order, OrderStatus
 from app.redis_client import get_redis
-from app.websocket.websocket import manager
 
 
 class QueueService:
     def __init__(self, venue_id: int, redis: Optional[Redis] = None):
         self.venue_id = venue_id
-        self.redis = redis or get_redis()
+        self.redis = redis
         self.queue_key = f"queue:venue:{venue_id}"
         self.current_key = f"current:venue:{venue_id}"
     
+    async def _get_redis(self) -> Redis:
+        if self.redis is None:
+            self.redis = await get_redis()
+        return self.redis
+    
     async def push(self, order_id: int, song_data: Dict[str, Any]) -> int:
+        redis = await self._get_redis()
         item = json.dumps({
             "order_id": order_id,
             "song_title": song_data.get("title"),
             "song_artist": song_data.get("artist"),
-            "song_external_id": song_data.get("external_id"),
+            #"song_external_id": song_data.get("external_id"),
             "song_provider": song_data.get("provider"),
             "song_duration": song_data.get("duration")
         })
-        return await self.redis.rpush(self.queue_key, item)
+        return await redis.rpush(self.queue_key, item)
     
     async def pop_next(self) -> Optional[Dict[str, Any]]:
-        next_item = await self.redis.lpop(self.queue_key)
+        redis = await self._get_redis()  # <-- добавил
+        next_item = await redis.lpop(self.queue_key)
         if next_item:
             data = json.loads(next_item)
-            await self.redis.setex(self.current_key, 3600, next_item)
+            await redis.setex(self.current_key, 3600, next_item)
             return data
         return None
     
-    async def get_all(self):
-        items = await self.redis.lrange(self.queue_key, 0, -1)
+    async def get_all(self) -> List[Dict[str, Any]]:
+        redis = await self._get_redis()
+        items = await redis.lrange(self.queue_key, 0, -1)
         return [json.loads(item) for item in items]
     
-    async def get_current(self):
-        current = await self.redis.get(self.current_key)
+    async def get_current(self) -> Optional[Dict[str, Any]]:
+        redis = await self._get_redis()  # <-- добавил
+        current = await redis.get(self.current_key)
         return json.loads(current) if current else None
     
-    async def clear(self):
-        await self.redis.delete(self.queue_key)
+    async def clear(self) -> None:
+        redis = await self._get_redis()  # <-- добавил
+        await redis.delete(self.queue_key)
     
     async def remove_by_order_id(self, order_id: int) -> bool:
+        redis = await self._get_redis()  # <-- добавил
         all_items = await self.get_all()
         for item in all_items:
             if item.get("order_id") == order_id:
-                await self.redis.lrem(self.queue_key, 1, json.dumps(item))
+                await redis.lrem(self.queue_key, 1, json.dumps(item))
                 return True
         return False
 
@@ -74,7 +84,7 @@ class OrderService:
             song_title=song_data.get("title"),
             song_artist=song_data.get("artist"),
             song_provider=song_data.get("provider"),
-            song_external_id=song_data.get("external_id"),
+            #song_external_id=song_data.get("external_id"),
             song_duration=song_data.get("duration"),
             price_paid=price,
             status=OrderStatus.PENDING,
@@ -133,16 +143,15 @@ class OrderService:
     
     async def get_order(self, order_id: int) -> Optional[Order]:
         return await self.db.get(Order, order_id)
-
     
     async def get_orders_by_venue(self, venue_id: int, status: Optional[OrderStatus] = None):
         query = select(Order).where(Order.venue_id == venue_id)
         if status:
             query = query.where(Order.status == status)
-        query = query.order_by(Order.created_at.desc())
+        query = query.order_by(Order.id.desc())
         result = await self.db.execute(query)
         return result.scalars().all()
-
+    
     async def get_orders_by_user(self, user_fingerprint: str, limit: int = 10) -> List[Order]:
         query = (
             select(Order)

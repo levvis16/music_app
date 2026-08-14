@@ -30,6 +30,7 @@ class Order(Base):
     __tablename__ = 'orders'
     id = Column(Integer, primary_key=True, index=True)
     venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    user_fingerprint = Column(String(255), nullable=False, index=True)
 
     song_title = Column(String(500), nullable=False)
     song_artist = Column(String(70))
@@ -42,7 +43,7 @@ class Order(Base):
 
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING, index=True)
     played_at = Column(DateTime)
-    
+    expires_at = Column(DateTime)
     venue = relationship("Venue", back_populates="orders")
 
 class PlayLog(Base):

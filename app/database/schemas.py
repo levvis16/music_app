@@ -56,7 +56,7 @@ class OrderCreate(BaseModel):
     song_title: str = Field(max_length=500)
     song_artist: Optional[str] = Field(default=None, max_length=70)
     song_provider: SongProvider
-    song_external_id: str
+    #song_external_id: str
     song_duration: Optional[int] = Field(default=None, ge=0)
     price: int = Field(ge=0)
 
@@ -116,6 +116,11 @@ class QueueResponse(BaseModel):
     total_in_queue: int
     max_queue_size: int 
 
-
+class TrackAdd(BaseModel):
+    title: str
+    artist: Optional[str] = None
+    external_id: str
+    provider: SongProvider
+    duration: Optional[int] = None
 #добавить схемы платежной системы
 #добавить схему поиска
