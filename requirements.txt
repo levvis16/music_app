@@ -8,3 +8,4 @@ redis[asyncio]
 dotenv
 pydantic-settings
 pytest
+websockets
