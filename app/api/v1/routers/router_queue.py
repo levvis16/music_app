@@ -85,7 +85,7 @@ async def guest_order(request: Request, order_data: OrderCreate, db: AsyncSessio
 
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
-    fingerprint = hashlib.md5(f"{client_ip}:{user_agent}".encode().hexdigest())
+    fingerprint = hashlib.md5(f"{client_ip}:{user_agent}".encode()).hexdigest()
 
     order_service = OrderService(db)
     order = await order_service.create_order(
@@ -95,7 +95,7 @@ async def guest_order(request: Request, order_data: OrderCreate, db: AsyncSessio
             "title": order_data.song_title,
             "artist": order_data.song_artist,
             "provider": order_data.song_provider,
-            "external_id": order_data.song_external_id,
+            #"external_id": order_data.song_external_id,
             "duration": order_data.song_duration
         },
         price=order_data.price
@@ -130,7 +130,7 @@ async def get_my_orders(request: Request, db: AsyncSession = Depends(get_db)):
 
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
-    fingerprint = hashlib.md5(f"{client_ip}:{user_agent}".encode().hexdigest())
+    fingerprint = hashlib.md5(f"{client_ip}:{user_agent}".encode()).hexdigest()
 
     order_service = OrderService(db)
     orders = await order_service.get_orders_by_user(fingerprint)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -19,9 +19,11 @@ class SongProvider(str, Enum):
 
 
 class VenueBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
     name: str
     address: Optional[str] = None
-    min_prise: int = Field(default=100, ge=0)
+    min_prise: int = Field(default=100, ge=0, alias="min_price")
     max_queue_size: int = Field(default=15, gt=1)
     qr_code_id: str
     is_active: bool = True
@@ -39,10 +41,6 @@ class VenueUpdate(BaseModel):
 class VenueResponse(VenueBase):
     id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
 
 
 class OrderBase(BaseModel):
@@ -70,8 +68,7 @@ class OrderResponse(BaseModel):
     price_paid: int
     payment_id: Optional[str] = None
     status: OrderStatus
-    created_at: datetime
-    
+
     class Config:
         from_attributes = True
 

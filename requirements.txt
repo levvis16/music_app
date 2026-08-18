@@ -7,3 +7,4 @@ python-dotenv
 redis[asyncio]
 dotenv
 pydantic-settings
+pytest

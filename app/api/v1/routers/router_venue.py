@@ -29,19 +29,19 @@ async def create_venue(venue_data: VenueCreate, db: AsyncSession = Depends(get_d
 
     return venue
 
-@router.get("/{venue_id}", response_model=VenueResponse)
-async def get_venue(venue_id: int, db: AsyncSession = Depends(get_db)):
-    venue = await db.get(Venue, venue_id)
+@router.get("/by-qr/{qr_code_id}", response_model=VenueResponse)
+async def get_venue_by_qr(qr_code_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Venue).where(Venue.qr_code_id == qr_code_id))
 
+    venue = result.scalar_one_or_none()
     if not venue:
         raise HTTPException(status_code=404, detail="Venue not found")
     return venue
 
-@router.get("/by-qr/{venue_id}", response_model=VenueResponse)
-async def get_venue_by_qr(qr_code_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Venue).where(Venue.qr_code_id == qr_code_id))
+@router.get("/{venue_id}", response_model=VenueResponse)
+async def get_venue(venue_id: int, db: AsyncSession = Depends(get_db)):
+    venue = await db.get(Venue, venue_id)
 
-    venue = result.scalar_one_or_none()
     if not venue:
         raise HTTPException(status_code=404, detail="Venue not found")
     return venue
@@ -51,13 +51,13 @@ async def get_all_venues(db:AsyncSession = Depends(get_db)):
     result = await db.execute(select(Venue))
     return result.scalars().all()
 
-@router.delete("/{venue_id}", response_model=VenueResponse)
+@router.delete("/{venue_id}")
 async def delete_venue(venue_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.get(Venue, venue_id)
-    if not result:
+    venue = await db.get(Venue, venue_id)
+    if not venue:
         raise HTTPException(status_code=404, detail="venue doesnt found")
-    
-    await db.delete(result)
+
+    await db.delete(venue)
     await db.commit()
 
     return {"status": "deleted", "venue_id": venue_id}

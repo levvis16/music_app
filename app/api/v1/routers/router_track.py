@@ -37,7 +37,7 @@ async def get_history(venue_id: int, db: AsyncSession = Depends(get_db), limit: 
     orders = await order_service.get_orders_by_venue(
         venue_id=venue_id,
         status=OrderStatus.PLAYED,
-        limit=limit
+        limit=limit,
     )
 
     return orders

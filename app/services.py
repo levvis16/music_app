@@ -58,11 +58,12 @@ class QueueService:
         await redis.delete(self.queue_key)
     
     async def remove_by_order_id(self, order_id: int) -> bool:
-        redis = await self._get_redis()  # <-- добавил
-        all_items = await self.get_all()
-        for item in all_items:
+        redis = await self._get_redis()
+        raw_items = await redis.lrange(self.queue_key, 0, -1)
+        for raw_item in raw_items:
+            item = json.loads(raw_item)
             if item.get("order_id") == order_id:
-                await redis.lrem(self.queue_key, 1, json.dumps(item))
+                await redis.lrem(self.queue_key, 1, raw_item)
                 return True
         return False
 
@@ -113,7 +114,7 @@ class OrderService:
             song_data={
                 "title": order.song_title,
                 "artist": order.song_artist,
-                "external_id": order.song_external_id,
+                #"external_id": order.song_external_id,
                 "provider": order.song_provider,
                 "duration": order.song_duration
             }
@@ -144,11 +145,18 @@ class OrderService:
     async def get_order(self, order_id: int) -> Optional[Order]:
         return await self.db.get(Order, order_id)
     
-    async def get_orders_by_venue(self, venue_id: int, status: Optional[OrderStatus] = None):
+    async def get_orders_by_venue(
+        self,
+        venue_id: int,
+        status: Optional[OrderStatus] = None,
+        limit: Optional[int] = None,
+    ):
         query = select(Order).where(Order.venue_id == venue_id)
         if status:
             query = query.where(Order.status == status)
         query = query.order_by(Order.id.desc())
+        if limit is not None:
+            query = query.limit(limit)
         result = await self.db.execute(query)
         return result.scalars().all()
     
