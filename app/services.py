@@ -35,10 +35,11 @@ class QueueService:
         return await redis.rpush(self.queue_key, item)
     
     async def pop_next(self) -> Optional[Dict[str, Any]]:
-        redis = await self._get_redis()  # <-- добавил
+        redis = await self._get_redis()  
         next_item = await redis.lpop(self.queue_key)
         if next_item:
             data = json.loads(next_item)
+            data["started_at"] = datetime.now().isoformat()
             await redis.setex(self.current_key, 3600, next_item)
             return data
         return None
@@ -49,12 +50,12 @@ class QueueService:
         return [json.loads(item) for item in items]
     
     async def get_current(self) -> Optional[Dict[str, Any]]:
-        redis = await self._get_redis()  # <-- добавил
+        redis = await self._get_redis() 
         current = await redis.get(self.current_key)
         return json.loads(current) if current else None
     
     async def clear(self) -> None:
-        redis = await self._get_redis()  # <-- добавил
+        redis = await self._get_redis()  
         await redis.delete(self.queue_key)
     
     async def remove_by_order_id(self, order_id: int) -> bool:

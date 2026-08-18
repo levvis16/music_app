@@ -1,7 +1,9 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, WebSocketDisconnect
 
+from app.scheduler import check_and_advance_queue
 from app.api.v1.routers.router_queue import router as queue_router
 from app.api.v1.routers.router_track import router as track_router
 from app.api.v1.routers.router_venue import router as venue_router
@@ -44,3 +46,16 @@ async def websocket_endpoint(websocket: WebSocket, venue_id: str):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, venue_id)
+
+async def background_worker():
+    while True:
+        try:
+            await check_and_advance_queue(1)
+        except Exception as e:
+            print(f"ошибка в {e}")
+        await asyncio.sleep(5)
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(background_worker())
+    print("старт воркера")
