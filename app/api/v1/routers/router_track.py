@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta
 
 from app.database.database import get_db
-from app.database.schemas import SongProvider, OrderResponse, OrderStatus
+from app.database.schemas import SongProvider, OrderResponse, OrderStatus, SongSearchResult
 from app.services import QueueService, OrderService, broadcast_queue_update
+from app.integrations.youtube import youtube_client
 
 router = APIRouter(prefix="/api/v1/track", tags=["track"])
 
@@ -82,3 +83,25 @@ async def next_track(venue_id: int, db: AsyncSession = Depends(get_db)):
 
     await broadcast_queue_update(venue_id)
     return {"status": "next", "next": next_track}
+
+
+@router.get("/search", response_model=List[SongSearchResult])
+async def search_tracks(
+    query: str = Query(..., min_length=1, description="Search query"),
+    provider: Optional[SongProvider] = Query(default=SongProvider.YOUTUBE, description="Music provider"),
+    limit: int = Query(default=10, ge=1, le=20, description="Maximum number of results"),
+):
+    """
+    Search for music tracks.
+    
+    Currently supports only YouTube provider.
+    Results are cached in Redis for 1 hour.
+    """
+    if provider != SongProvider.YOUTUBE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Provider '{provider}' not supported yet. Only 'youtube' is available."
+        )
+    
+    results = await youtube_client.search(query=query, limit=limit)
+    return results

@@ -119,5 +119,14 @@ class TrackAdd(BaseModel):
     external_id: str
     provider: SongProvider
     duration: Optional[int] = None
+
+
+class SongSearchResult(BaseModel):
+    external_id: str
+    title: str
+    artist: Optional[str] = None
+    duration: Optional[int] = None
+    thumbnail: Optional[str] = None
+    provider: SongProvider
+
 #добавить схемы платежной системы
-#добавить схему поиска

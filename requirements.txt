@@ -9,3 +9,4 @@ dotenv
 pydantic-settings
 pytest
 websockets
+aiohttp
