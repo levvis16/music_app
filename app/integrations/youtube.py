@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
-CACHE_TTL = 3600  # 1 hour
+CACHE_TTL = 3600  
 
 
 class YouTubeClient:
@@ -70,17 +70,6 @@ class YouTubeClient:
         limit: int = 10,
         use_cache: bool = True
     ) -> List[SongSearchResult]:
-        """
-        Search YouTube for music tracks.
-        
-        Args:
-            query: Search query string
-            limit: Maximum number of results (1-20)
-            use_cache: Whether to use Redis cache
-            
-        Returns:
-            List of SongSearchResult objects
-        """
         if not self.api_key:
             logger.error("YouTube API key not configured")
             return []
@@ -88,7 +77,6 @@ class YouTubeClient:
         limit = max(1, min(limit, 20))
         cache_key = self._build_cache_key(query, limit)
 
-        # Try cache first
         if use_cache:
             cached = await self._get_cached(cache_key)
             if cached is not None:
@@ -96,15 +84,12 @@ class YouTubeClient:
                 return cached
 
         try:
-            # Step 1: Search for videos
             video_ids = await self._search_video_ids(query, limit)
             if not video_ids:
                 return []
 
-            # Step 2: Get video details (duration, etc.)
             results = await self._get_video_details(video_ids)
 
-            # Cache results
             if use_cache and results:
                 await self._set_cache(cache_key, results)
 
@@ -118,13 +103,12 @@ class YouTubeClient:
             return []
 
     async def _search_video_ids(self, query: str, limit: int) -> List[str]:
-        """Search for video IDs using YouTube Data API v3."""
         session = await self._get_session()
         
         params = {
             "part": "snippet",
             "type": "video",
-            "videoCategoryId": "10",  # Music category
+            "videoCategoryId": "10",  
             "maxResults": limit,
             "q": query,
             "key": self.api_key,
@@ -143,7 +127,6 @@ class YouTubeClient:
             return [item["id"]["videoId"] for item in items if item.get("id", {}).get("videoId")]
 
     async def _get_video_details(self, video_ids: List[str]) -> List[SongSearchResult]:
-        """Get video details (duration, thumbnails) for a list of video IDs."""
         if not video_ids:
             return []
 
@@ -170,10 +153,8 @@ class YouTubeClient:
                     snippet = item.get("snippet", {})
                     content_details = item.get("contentDetails", {})
 
-                    # Parse duration (ISO 8601 format: PT4M13S)
                     duration = self._parse_duration(content_details.get("duration", ""))
 
-                    # Get best thumbnail
                     thumbnails = snippet.get("thumbnails", {})
                     thumbnail = (
                         thumbnails.get("high", {}).get("url")
@@ -181,11 +162,9 @@ class YouTubeClient:
                         or thumbnails.get("default", {}).get("url")
                     )
 
-                    # Extract artist from title if possible
                     title = snippet.get("title", "")
                     artist = snippet.get("channelTitle", "")
                     
-                    # Try to split "Artist - Title" format
                     if " - " in title and not artist:
                         parts = title.split(" - ", 1)
                         artist, title = parts[0], parts[1]
@@ -206,13 +185,11 @@ class YouTubeClient:
 
     @staticmethod
     def _parse_duration(duration_str: str) -> Optional[int]:
-        """Parse ISO 8601 duration (PT4M13S) to seconds."""
         if not duration_str or not duration_str.startswith("PT"):
             return None
         
         try:
-            # Simple parser for PT#H#M#S format
-            duration_str = duration_str[2:]  # Remove "PT"
+            duration_str = duration_str[2:]  
             hours = 0
             minutes = 0
             seconds = 0
@@ -231,10 +208,8 @@ class YouTubeClient:
             return None
 
     async def close(self):
-        """Close the aiohttp session."""
         if self._session and not self._session.closed:
             await self._session.close()
 
 
-# Global instance
 youtube_client = YouTubeClient()

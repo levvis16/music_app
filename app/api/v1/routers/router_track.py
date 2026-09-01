@@ -91,12 +91,6 @@ async def search_tracks(
     provider: Optional[SongProvider] = Query(default=SongProvider.YOUTUBE, description="Music provider"),
     limit: int = Query(default=10, ge=1, le=20, description="Maximum number of results"),
 ):
-    """
-    Search for music tracks.
-    
-    Currently supports only YouTube provider.
-    Results are cached in Redis for 1 hour.
-    """
     if provider != SongProvider.YOUTUBE:
         raise HTTPException(
             status_code=400,
